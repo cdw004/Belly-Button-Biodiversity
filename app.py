@@ -42,11 +42,6 @@ def home():
 #    Returns a list of sample names in the format
 #    [
 #        "BB_940",
-#        "BB_941",
-#        "BB_943",
-#        "BB_944",
-#        "BB_945",
-#        "BB_946",
 #        "BB_947",
 #        ...
 #    ]
@@ -65,9 +60,6 @@ def names():
 
 #    [
 #        "Archaea;Euryarchaeota;Halobacteria;Halobacteriales;Halobacteriaceae;Halococcus",
-#        "Archaea;Euryarchaeota;Halobacteria;Halobacteriales;Halobacteriaceae;Halococcus",
-#        "Bacteria",
-#        "Bacteria",
 #        "Bacteria",
 #        ...
 #    ]
@@ -94,43 +86,32 @@ def otu():
 #        SAMPLEID: 940
 #    }
 #    """
-def metadata_sample:
-    sel = [Samples_Metadata.SAMPLEID, Samples_Metadata.ETHNICITY,
-           Samples_Metadata.GENDER, Samples_Metadata.AGE,
-           Samples_Metadata.LOCATION, Samples_Metadata.BBTYPE]
-    for result in results:
-        metadata_sample['SAMPLEID'] = result[0]
-        metadata_sample['ETHNICITY'] = result[1]
-        metadata_sample['GENDER'] = result[2]
-        metadata_sample['AGE'] = result[3]
-        metadata_sample['LOCATION'] = result[4]
-        metadata_sample['BBTYPE'] = result[5]
-
-    return jsonify(sample_metadata)
+def metadata(sample):
+    samp_meta = session.query(Metadata).statement
+    samp_meta_df=pd.read_sql_query(samp_meta,session.bind)
+    samp_num=int(sample.split("_")[1])
+    selected_sample = samp_meta_df.loc[samp_meta_df["SAMPLEID"] == samp_num, :]
+    json_selected_sample = selected_sample.to_json(orient='records')
+    return json_selected_sample
 ################################################################
 @app.route('/wfreq/<sample>')
-#    """Weekly Washing Frequency as a number.
-
+#    Weekly Washing Frequency as a number.
 #    Args: Sample in the format: `BB_940`
-
 #    Returns an integer value for the weekly washing frequency `WFREQ`
-#    """
-def wfreq:
-    filter(Samples_Metadata.SAMPLEID == sample[3:]).all()
-    wfreq = np.ravel(results)
-
-    return jsonify(int(wfreq[0]))
-
+def metadata(sample):
+    samp_meta = session.query(Metadata).statement
+    samp_meta_df=pd.read_sql_query(samp_meta,session.bind)
+    samp_num=int(sample.split("_")[1])
+    selected_sample = samp_meta_df.loc[samp_meta_df["SAMPLEID"] == samp_num, :]
+    wfreq = selected_sample["WFREQ"].values[0]
+    return f"{wfreq}"
 ################################################################
 @app.route('/samples/<sample>')
 #    """OTU IDs and Sample Values for a given sample.
-#
 #    Sort your Pandas DataFrame (OTU ID and Sample Value)
 #    in Descending Order by Sample Value
-
 #    Return a list of dictionaries containing sorted lists  for `otu_ids`
 #    and `sample_values`
-
 #    [
 #        {
 #            otu_ids: [
@@ -148,24 +129,33 @@ def wfreq:
 #        }
 #    ]
 #    """
-    state = session.query(Samples).statement
-    df = pd.read_sql_query(state, session.bind)
+def samples(sample):
+    otus = session.query(OTU).statement
+    otus_df=pd.read_sql_query(otus,session.bind)
+    otus_df.set_index('otu_id',inplace=True)
+    samp_names = session.query(Samples).statement
+    samp_df=pd.read_sql_query(samp_names,session.bind)
+    samp_df.set_index('otu_id',inplace=True)
+    sel_samp = samp_df[sample]
+    otus_id = samp_df['otu_id']
+    sel_df = pd.select({
+        "otus_id":otu_ids,
+        "samples":sel_samp
+    })
 
-    if sample not in df.columns:
-        return jsonify(f"Error! Sample: {sample} Not Found!"), 400
+    sorted_df = sel_df.sort_values(by=['samples'], ascending=False)
+    sorted_otus = {"otu_ids": list(sorted_df['otu_ids'].values)}
+    sorted_samples = {"sample_values": list(sorted_df['samples'].values)}
+    for i in range(len(sorted_otus["otu_ids"])):
+        sorted_otus["otu_ids"][i] = int(sorted_otus["otu_ids"][i])
+    for i in range(len(sorted_samples["sample_values"])):
+        sorted_samples["sample_values"][i] = int(sorted_samples["sample_values"][i])
+    results = [sorted_otus, sorted_samples, list(all_otus_df["lowest_taxonomic_unit_found"])]
+    return jsonify(results)
 
-    df = df[df[sample] > 1]
 
-    df = df.sort_values(by=sample, ascending=0)
-
-    data = [{
-        "otu_ids": df[sample].index.values.tolist(),
-        "sample_values": df[sample].values.tolist()
-    }]
-    return jsonify(data)
-    if __name__ == "__main__":
-     app.run(debug=True)
-   
+if __name__ == "__main__":
+    app.run(debug=True)
 
 ####resources:
 #http://flask.pocoo.org/docs/0.12/patterns/sqlite3/
