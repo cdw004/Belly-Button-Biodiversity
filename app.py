@@ -17,14 +17,23 @@ app = Flask(__name__)
 # Database Setup
 #################################################
 from flask_sqlalchemy import SQLAlchemy
-app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///DataSets/belly_button_biodiversity.sqlite"
-db = SQLAlchemy(app)
+#app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:///DataSets/belly_button_biodiversity.sqlite"
+#db = SQLAlchemy(app)
+engine = create_engine("sqlite:///db/belly_button_biodiversity.sqlite", echo=False)
+
+Base = automap_base()
+Base.prepare(engine, reflect=True)
+Sample = Base.classes.samples
+OTU = Base.classes.otu
+Metadata = Base.classes.samples_metadata
+session = Session(engine)
+
+session = Session(engine)
+
 #################################################
-
-
-
 @app.route("/")
-    #"""Return the dashboard homepage."""
+#"""Return the dashboard homepage."""
+def home():
     return render_template('index.html')
 ################################################################
 @app.route('/names')
@@ -41,15 +50,12 @@ db = SQLAlchemy(app)
 #        "BB_947",
 #        ...
 #    ]
-
 #    """
 def names():
-    state = session.query(Samples).statement
-    df=pd.read_sql_query(state,session.bind)
-    df.set_index('otu_id',inplace=True)
-#    sampleNames = getSampleNames()
-#    return json.dumps(sampleNames)
-    return jsonify(list(df.columns))
+    samp_names = session.query(Samples).statement
+    samp_df=pd.read_sql_query(samp_names,session.bind)
+    samp_df.set_index('otu_id',inplace=True)
+    return jsonify(list(samp_df.columns))
 
 ################################################################
 @app.route('/otu')
@@ -67,9 +73,10 @@ def names():
 #    ]
 #    """
 def otu():
-    otu=list(np.ravel(results))
-    return jsonify(list(otu))
-
+    otus = session.query(OTU).statement
+    otus_df=pd.read_sql_query(otus,session.bind)
+    otus_df.set_index('otu_id',inplace=True)
+    return jsonify(list(otus_df))
 ################################################################
 @app.route('/metadata/<sample>')
 #    """MetaData for a given sample.
