@@ -13,7 +13,58 @@
 </head>
 
 <body>
+    <div class="jumbotron">
+        <div class="container">
+            <h1>Belly Button Biodiversity Dashboard</h1>
+            <p> User the interactive charts below to explore the dataset!</p>
+        </div>
+    </div>
+    <div class="container">
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-3">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Selected Sample</h2>
+                    </div>
+                    <div class="panel-body">
+                        <select id="selDataset" onchange="optionChanged(this.value)"></select>
+                        <ul id="sampleMetadata"></ul>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-7">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">Most Prominent OTUs</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div id="pieChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-1"></div>
+            <div class="col-md-10">
+                <div class="panel panel-primary">
+                    <div class="panel-heading">
+                        <h2 class="panel-title">All OTU Results</h2>
+                    </div>
+                    <div class="panel-body">
+                        <div id="bubbleChart"></div>
+                    </div>
+                </div>
 
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="Plotly.js"></script>
+    <!-- jQuery (necessary for Bootstrap's JavaScript plugins) -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <!-- Include all compiled plugins (below), or include individual files as needed -->
+    <script src="js/bootstrap.min.js"></script>
 </body>
 
 </html>
